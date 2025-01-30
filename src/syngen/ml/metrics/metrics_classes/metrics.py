@@ -5,6 +5,13 @@ from collections import Counter
 import re
 import random
 
+import tensorflow as tf 
+
+
+from sklearn.metrics import silhouette_score
+from sklearn.cluster import KMeans
+from sklearn.metrics import mean_absolute_error
+
 import tqdm
 from sklearn.cluster import KMeans
 from sklearn.metrics import davies_bouldin_score
@@ -1034,6 +1041,7 @@ class Clustering(BaseMetric):
         Calculate the diversity score for each cluster
         from collected statistics.
         If in cluster only one dataset is present, return 0.
+        Wonder if it is possible to have only one dataset in cluster.
         """
         if statistics['dataset'].nunique() == 2:
             return min(statistics['count']) / max(statistics['count'])
@@ -1045,6 +1053,7 @@ class Clustering(BaseMetric):
         """
         Calculate the optimal number of clusters using Davies-Bouldin score
         """
+        sihlouette_scores = []
         davies_bouldin_scores = []
         max_clusters = min(10, len(dataset))
 
@@ -1054,11 +1063,13 @@ class Clustering(BaseMetric):
                 )
             labels = clusters.labels_
             score = davies_bouldin_score(dataset, labels)
+            print(f'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+            print(f"Debug print davies_bouldin_score: {score}")
             davies_bouldin_scores.append(score)
 
         # Get number of clusters with the lowest Davies-Bouldin score
         # +2 because the range starts from 2
-        optimal_clusters = np.argmin(davies_bouldin_scores) + 2
+        optimal_clusters = np.argmin(davies_bouldin_scores) + 1
 
         return optimal_clusters
 

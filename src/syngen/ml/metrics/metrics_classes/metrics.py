@@ -1043,23 +1043,60 @@ class Clustering(BaseMetric):
     @timing
     def __get_optimal_number_of_clusters(self, dataset):
         """
-        Calculate the optimal number of clusters using Davies-Bouldin score
+        Calculate the optimal number of clusters using both Davies-Bouldin and Silhouette scores.
+        
+        Args:
+            dataset: numpy array or pandas DataFrame of shape (n_samples, n_features)
+            
+        Returns:
+            int: Optimal number of clusters
+        
+        Notes:
+            - Davies-Bouldin score: Lower values indicate better clustering
+            - Silhouette score: Higher values indicate better clustering
         """
         davies_bouldin_scores = []
+        silhouette_scores = []
         max_clusters = min(10, len(dataset))
+        
+        for n_clusters in range(2, max_clusters + 1):
+            # Initialize KMeans with better parameters for convergence and performance
+            kmeans = KMeans(
+                n_clusters=n_clusters,
+                random_state=42,
+                n_init='auto',  # Automatically determine the number of initializations
+                init='k-means++',  # Use k-means++ initialization for better starting centroids
+            )
+            
+            # Fit and predict in one step
+            labels = kmeans.fit_predict(dataset)
+            
+            # Calculate both scores efficiently
+            db_score = davies_bouldin_score(dataset, labels)
+            # Use faster algorithm for silhouette score when dataset is large
+            if len(dataset) > 10000:
+                sil_score = silhouette_score(dataset, labels, sample_size=10000, random_state=42)
+            else:
+                sil_score = silhouette_score(dataset, labels)
+            
+            davies_bouldin_scores.append(db_score)
+            silhouette_scores.append(sil_score)
+        
+        # Normalize scores to [0,1] range for comparison
+        def min_max_normalize(scores):
+            scores_array = np.array(scores)
+            return (scores_array - scores_array.min()) / (scores_array.max() - scores_array.min())
 
-        for i in range(2, max_clusters):
-            clusters = KMeans(n_clusters=i, random_state=10).fit(
-                dataset
-                )
-            labels = clusters.labels_
-            score = davies_bouldin_score(dataset, labels)
-            davies_bouldin_scores.append(score)
+        # Normalize and invert Davies-Bouldin score (lower is better)
+        db_normalized = 1 - min_max_normalize(davies_bouldin_scores)
+        # Normalize Silhouette score (higher is better)
+        sil_normalized = min_max_normalize(silhouette_scores)
 
-        # Get number of clusters with the lowest Davies-Bouldin score
-        # +2 because the range starts from 2
-        optimal_clusters = np.argmin(davies_bouldin_scores) + 2
-
+        # Combine scores with equal weights and handle edge cases
+        combined_scores = np.nan_to_num((db_normalized + sil_normalized) / 2, nan=0.0)
+        
+        optimal_clusters = np.argmax(combined_scores) + 2
+        
         return optimal_clusters
 
     def __preprocess_data(self, dataset):

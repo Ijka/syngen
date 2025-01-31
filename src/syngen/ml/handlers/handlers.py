@@ -323,7 +323,7 @@ class VaeInferHandler(BaseHandler):
                 for i, j in zip(*text_structures)
             ]
             logger.debug(f'Long text for column {col} is generated.')
-            synthetic_infer[col] = generated_column
+            synthetic_infer[col] = pd.Series(generated_column)
         return synthetic_infer
 
     def run_separate(self, params: Tuple):

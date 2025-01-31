@@ -1043,23 +1043,40 @@ class Clustering(BaseMetric):
     @timing
     def __get_optimal_number_of_clusters(self, dataset):
         """
-        Calculate the optimal number of clusters using Davies-Bouldin score
+        Calculate the optimal number of clusters using both Davies-Bouldin and Silhouette scores.
+        
+        Args:
+            dataset: numpy array or pandas DataFrame of shape (n_samples, n_features)
+            
+        Returns:
+            int: Optimal number of clusters
+        
+        Notes:
+            - Davies-Bouldin score: Lower values indicate better clustering
+            - Silhouette score: Higher values indicate better clustering
         """
         davies_bouldin_scores = []
+        silhouette_scores = []
         max_clusters = min(10, len(dataset))
-
-        for i in range(2, max_clusters):
-            clusters = KMeans(n_clusters=i, random_state=10).fit(
-                dataset
-                )
-            labels = clusters.labels_
-            score = davies_bouldin_score(dataset, labels)
-            davies_bouldin_scores.append(score)
-
-        # Get number of clusters with the lowest Davies-Bouldin score
-        # +2 because the range starts from 2
-        optimal_clusters = np.argmin(davies_bouldin_scores) + 2
-
+        
+        for n_clusters in range(2, max_clusters + 1):
+            kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+            labels = kmeans.fit_predict(dataset)
+            
+            db_score = davies_bouldin_score(dataset, labels)
+            sil_score = silhouette_score(dataset, labels)
+            
+            davies_bouldin_scores.append(db_score)
+            silhouette_scores.append(sil_score)
+        
+        # Normalize scores to [0,1] range for comparison
+        db_normalized = 1 - (davies_bouldin_scores - np.min(davies_bouldin_scores)) / (np.max(davies_bouldin_scores) - np.min(davies_bouldin_scores))
+        sil_normalized = (silhouette_scores - np.min(silhouette_scores)) / (np.max(silhouette_scores) - np.min(silhouette_scores))
+        
+        # Combine scores with equal weights
+        combined_scores = (db_normalized + sil_normalized) / 2
+        optimal_clusters = np.argmax(combined_scores) + 2
+        
         return optimal_clusters
 
     def __preprocess_data(self, dataset):

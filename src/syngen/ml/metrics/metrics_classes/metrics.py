@@ -7,7 +7,7 @@ import random
 
 import tqdm
 from sklearn.cluster import KMeans
-from sklearn.metrics import davies_bouldin_score
+from sklearn.metrics import davies_bouldin_score, silhouette_score, mean_absolute_error
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier

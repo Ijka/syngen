@@ -6,7 +6,7 @@ import re
 import random
 
 import tqdm
-from sklearn.cluster import KMeans
+
 from sklearn.metrics import davies_bouldin_score
 
 from sklearn.linear_model import LogisticRegression

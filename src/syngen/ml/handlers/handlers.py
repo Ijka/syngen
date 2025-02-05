@@ -122,19 +122,22 @@ class LongTextsHandler(BaseHandler):
             features = {}
             for col in long_text_columns:
                 tokenizer = Tokenizer(lower=False, char_level=True)
-                if type(data[col].dropna().values[0]) is bytes:
-                    text_col = data[col].str.decode("utf-8", errors="ignore")
-                else:
-                    text_col = data[col]
-                text_col = text_col.fillna("")
+                # Vectorized text column processing
+                text_col = (data[col].str.decode("utf-8", errors="ignore") 
+                          if isinstance(data[col].dropna().iloc[0], bytes) 
+                          else data[col]).fillna("")
+                
                 tokenizer.fit_on_texts(text_col)
 
                 indexes = OrderedDict((k, v) for k, v in tokenizer.word_index.items() if k != " ")
                 counts = OrderedDict((k, v) for k, v in tokenizer.word_counts.items() if k != " ")
                 ordered_indexes = OrderedDict((k, indexes[k]) for k in counts.keys())
-                text_structure = np.array(
-                    [text_col.str.len(), text_col.apply(self.series_count_words)]
-                )
+                
+                # Vectorized text structure calculation
+                text_lengths = text_col.str.len()
+                word_counts = text_col.str.split().str.len()
+                text_structure = np.array([text_lengths, word_counts])
+                
                 noise_to_prevent_singularity = np.random.uniform(
                     low=-1e-4,
                     high=1e-4,

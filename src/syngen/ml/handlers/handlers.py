@@ -122,29 +122,37 @@ class LongTextsHandler(BaseHandler):
             features = {}
             for col in long_text_columns:
                 tokenizer = Tokenizer(lower=False, char_level=True)
-                if type(data[col].dropna().values[0]) is bytes:
-                    text_col = data[col].str.decode("utf-8", errors="ignore")
-                else:
-                    text_col = data[col]
+                text_col = data[col].str.decode("utf-8", errors="ignore") if data[col].dtype == 'object' and isinstance(data[col].dropna().values[0], bytes) else data[col]
                 text_col = text_col.fillna("")
                 tokenizer.fit_on_texts(text_col)
 
+                # Filter out spaces from word index and counts
                 indexes = OrderedDict((k, v) for k, v in tokenizer.word_index.items() if k != " ")
                 counts = OrderedDict((k, v) for k, v in tokenizer.word_counts.items() if k != " ")
                 ordered_indexes = OrderedDict((k, indexes[k]) for k in counts.keys())
-                text_structure = np.array(
-                    [text_col.str.len(), text_col.apply(self.series_count_words)]
-                )
+                
+                # Calculate text structure features
+                text_structure = np.array([
+                    text_col.str.len(),
+                    text_col.apply(self.series_count_words)
+                ])
+                
+                # Add small noise to prevent singularity
                 noise_to_prevent_singularity = np.random.uniform(
                     low=-1e-4,
                     high=1e-4,
                     size=(text_structure.shape[0], text_structure.shape[1]),
                 )
+                
+                # Calculate bandwidth for KDE
                 bw_width = text_structure.shape[1] / text_structure.shape[1] ** 1.3
+                
+                # Fit KDE
                 kde = gaussian_kde(
                     (text_structure + noise_to_prevent_singularity).astype("float64"),
                     bw_method=bw_width,
                 )
+                
                 features[col] = {
                     "counts": counts,
                     "indexes": ordered_indexes,

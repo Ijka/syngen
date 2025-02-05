@@ -1061,7 +1061,7 @@ class Clustering(BaseMetric):
 
         # Get number of clusters with the lowest Davies-Bouldin score
         # +2 because the range starts from 2
-        optimal_clusters = np.argmin(davies_bouldin_scores) + 2
+        optimal_clusters = np.argmin(davies_bouldin_scores) + 1
 
         return optimal_clusters
 

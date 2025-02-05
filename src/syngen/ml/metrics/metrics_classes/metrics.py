@@ -1054,6 +1054,9 @@ class Clustering(BaseMetric):
                 )
             labels = clusters.labels_
             score = davies_bouldin_score(dataset, labels)
+            # Consider using logging instead of print for better control over debug output
+            # import logging
+            # logging.debug(f"Davies-Bouldin score: {score}")
             davies_bouldin_scores.append(score)
 
         # Get number of clusters with the lowest Davies-Bouldin score

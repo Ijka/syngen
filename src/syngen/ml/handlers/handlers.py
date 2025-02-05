@@ -102,6 +102,7 @@ class LongTextsHandler(BaseHandler):
     schema: Optional[Dict] = field(kw_only=True)
 
     @staticmethod
+    @staticmethod
     def series_count_words(x):
         return len(str(x).split())
 

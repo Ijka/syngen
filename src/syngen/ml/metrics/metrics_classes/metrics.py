@@ -1045,7 +1045,7 @@ class Clustering(BaseMetric):
         """
         Calculate the optimal number of clusters using Davies-Bouldin score
         """
-        davies_bouldin_scores = []
+        silhouette_scores = []
         max_clusters = min(10, len(dataset))
 
         for i in range(2, max_clusters):
